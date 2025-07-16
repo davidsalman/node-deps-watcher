@@ -16,7 +16,7 @@
     "dependencies",
     "npm",
     "yarn",
-    "pnmp",
+    "pnpm",
     "git",
     "watcher"
   ],
