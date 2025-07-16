@@ -23,11 +23,11 @@ export default [
   ...compat.extends('plugin:@typescript-eslint/recommended', 'plugin:prettier/recommended', 'prettier'),
   {
     files: ['**/*.{js,mjs,cjs,ts}'],
-    ignores: ['node_modules', 'dist'],
+    ignores: ['node_modules', 'out', '.vscode-test'],
     languageOptions: {
       globals: { ...globals.node, ...globals.jest },
       parser: tsParser,
-      ecmaVersion: 2018,
+      ecmaVersion: 2020,
     },
     plugins: {
       import: fixupPluginRules(_import),
@@ -47,7 +47,6 @@ export default [
       eqeqeq: 'error',
       'generator-star-spacing': ['error', 'after'],
       'linebreak-style': ['error', 'unix'],
-      'no-catch-shadow': 'error',
       'no-console': 'off',
       'no-duplicate-imports': 'error',
       'no-else-return': 'off',
