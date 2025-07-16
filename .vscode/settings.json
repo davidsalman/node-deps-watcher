@@ -1,0 +1,30 @@
+{
+  /* Editor - IDE and tab-completion settings */
+  "editor.codeActionsOnSave": {
+    "source.fixAll": "never",
+    "source.fixAll.eslint": "explicit",
+  },
+  "editor.formatOnSave": false,
+  "editor.minimap.enabled": false,
+  "editor.tabSize": 2,
+  "editor.tabCompletion": "on",
+  "editor.snippetSuggestions": "bottom",
+  "search.useIgnoreFiles": true,
+  "search.useGlobalIgnoreFiles": true,
+  "workbench.editor.pinnedTabSizing": "shrink",
+
+  /* [DO NOT EDIT] Eslint/Prettier - formatting and linting */
+  "eslint.enable": true,
+  "eslint.format.enable": true,
+  "eslint.lintTask.enable": true,
+  "eslint.run": "onType",
+  "eslint.validate": [
+    "typescript",
+    "javascript",
+  ],
+  "prettier.enable": true,
+
+  /* Typescript - automatically update import on file move/rename and sdk location */
+  "typescript.updateImportsOnFileMove.enabled": "always",
+  "typescript.tsdk": "node_modules/typescript/lib",
+}
