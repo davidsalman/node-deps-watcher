@@ -10,11 +10,11 @@ let statusBarItem: vscode.StatusBarItem
 let outputChannel: vscode.OutputChannel
 
 export function activate(context: vscode.ExtensionContext) {
-  console.log('Node Dependency Watcher is now active!')
-
   // Initialize output channel
   outputChannel = vscode.window.createOutputChannel('Node Deps Watcher')
   context.subscriptions.push(outputChannel)
+
+  outputChannel.appendLine('Node Deps Watcher activated')
 
   // Initialize status bar item
   statusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 100)
