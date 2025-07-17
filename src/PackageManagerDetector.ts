@@ -130,10 +130,15 @@ export class PackageManagerDetector {
         const result = JSON.parse(stdout)
         const packages: Record<string, string> = {}
         if (result.data && result.data.trees) {
-          result.data.trees.forEach((tree: any) => {
+          result.data.trees.forEach((tree: { name: string }) => {
             if (tree.name && tree.name.includes('@')) {
-              const [name, version] = tree.name.split('@')
-              packages[name] = version
+              // Extract package name and version accounting for scope packages
+              // e.g., @scope/package@1.0.0
+              const match = tree.name.match(/^(.*)@([^@]+)$/)
+              if (match) {
+                const [, name, version] = match
+                packages[name] = version
+              }
             }
           })
         }
