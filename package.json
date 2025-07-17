@@ -1,14 +1,78 @@
 {
   "name": "node-deps-watcher",
-  "version": "0.0.0",
+  "displayName": "Node Dependencies Watcher",
   "description": "VS Code extension that watches and manages Node.js package dependencies when switching git branches",
+  "version": "0.0.0",
   "main": "./out/extensions.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+  "author": "David Salman",
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "categories": [
+    "Other"
+  ],
+  "contributes": {
+    "commands": [
+      {
+        "command": "nodeDepsWatcher.checkDependencies",
+        "title": "Check Dependencies",
+        "category": "Node Deps Watcher"
+      },
+      {
+        "command": "nodeDepsWatcher.cleanInstall",
+        "title": "Clean Install Dependencies",
+        "category": "Node Deps Watcher"
+      },
+      {
+        "command": "nodeDepsWatcher.detectPackageManager",
+        "title": "Detect Package Manager",
+        "category": "Node Deps Watcher"
+      },
+      {
+        "command": "nodeDepsWatcher.toggleAutoCheck",
+        "title": "Toggle Auto-Check on Branch Switch",
+        "category": "Node Deps Watcher"
+      },
+      {
+        "command": "nodeDepsWatcher.toggleDeleteNodeModulesOnCleanInstall",
+        "title": "Toggle Delete node_modules on Clean Install",
+        "category": "Node Deps Watcher"
+      }
+    ],
+    "configuration": {
+      "title": "Node Deps Watcher",
+      "properties": {
+        "nodeDepsWatcher.autoCheckOnBranchSwitch": {
+          "type": "boolean",
+          "default": true,
+          "description": "Automatically check dependencies when switching git branches"
+        },
+        "nodeDepsWatcher.showStatusBarItem": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show dependency status in status bar"
+        },
+        "nodeDepsWatcher.preferredPackageManager": {
+          "type": "string",
+          "enum": [
+            "auto",
+            "npm",
+            "yarn",
+            "pnpm"
+          ],
+          "default": "auto",
+          "description": "Preferred package manager to use"
+        },
+        "nodeDepsWatcher.deleteNodeModulesOnCleanInstall": {
+          "type": "boolean",
+          "default": false,
+          "description": "Delete node_modules directory before performing a clean install"
+        }
+      }
+    }
   },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/davidsalman/node-deps-watcher.git"
+  "engines": {
+    "vscode": "^1.102.0"   
   },
   "keywords": [
     "vscode",
@@ -20,16 +84,32 @@
     "git",
     "watcher"
   ],
-  "author": "David Salman",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/davidsalman/node-deps-watcher.git"
+  },
   "bugs": {
     "url": "https://github.com/davidsalman/node-deps-watcher/issues"
   },
   "homepage": "https://github.com/davidsalman/node-deps-watcher#readme",
+  "scripts": {
+    "build": "tsc -p ./",
+    "eslint": "eslint src",
+    "eslint:fix": "eslint src --fix",
+    "prettier": "prettier src --check",
+    "prettier:fix": "prettier src --write",
+    "lint": "npm run eslint && npm run prettier",
+    "lint:fix": "npm run eslint:fix && npm run prettier:fix",
+    "vscode:prebuild": "npm run build"
+  },
   "devDependencies": {
     "@eslint/compat": "^1.3.1",
     "@eslint/eslintrc": "^3.3.1",
     "@eslint/js": "^9.31.0",
+    "@types/node": "^16.18.126",
+    "@types/semver": "^7.7.0",
+    "@types/vscode": "^1.102.0",
     "@typescript-eslint/eslint-plugin": "^8.37.0",
     "@typescript-eslint/parser": "^8.37.0",
     "eslint": "^9.31.0",
@@ -40,5 +120,8 @@
     "prettier": "^3.6.2",
     "typescript": "^5.8.3",
     "typescript-eslint": "^8.37.0"
+  },
+  "dependencies": {
+    "semver": "^7.7.2"
   }
 }
