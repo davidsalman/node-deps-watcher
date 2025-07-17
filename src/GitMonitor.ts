@@ -35,7 +35,8 @@ import * as path from 'path'
 export class GitMonitor {
   private currentBranch: string = ''
   private branchChangeEmitter = new vscode.EventEmitter<string>()
-  private fileWatcher: vscode.FileSystemWatcher | undefined
+  private gitHeadWatcher: vscode.FileSystemWatcher | undefined
+  private gitRefsWatcher: vscode.FileSystemWatcher | undefined
 
   constructor(private outputChannel: vscode.OutputChannel) {
     this.setupGitMonitoring()
@@ -63,14 +64,14 @@ export class GitMonitor {
     this.outputChannel.appendLine(`Initial branch: ${this.currentBranch}`)
 
     // Watch for branch changes
-    this.fileWatcher = vscode.workspace.createFileSystemWatcher('**/.git/HEAD')
-    this.fileWatcher.onDidChange(() => {
+    this.gitHeadWatcher = vscode.workspace.createFileSystemWatcher('**/.git/HEAD')
+    this.gitHeadWatcher.onDidChange(() => {
       this.checkBranchChange(workspacePath)
     })
 
     // Also watch for git operations that might not update HEAD directly
-    const gitRefWatcher = vscode.workspace.createFileSystemWatcher('**/.git/refs/heads/*')
-    gitRefWatcher.onDidChange(() => {
+    this.gitRefsWatcher = vscode.workspace.createFileSystemWatcher('**/.git/refs/heads/*')
+    this.gitRefsWatcher.onDidChange(() => {
       setTimeout(() => this.checkBranchChange(workspacePath), 100)
     })
   }
@@ -107,8 +108,11 @@ export class GitMonitor {
   }
 
   dispose() {
-    if (this.fileWatcher) {
-      this.fileWatcher.dispose()
+    if (this.gitHeadWatcher) {
+      this.gitHeadWatcher.dispose()
+    }
+    if (this.gitRefsWatcher) {
+      this.gitRefsWatcher.dispose()
     }
     this.branchChangeEmitter.dispose()
   }
