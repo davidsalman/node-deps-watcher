@@ -65,13 +65,13 @@ export class GitMonitor {
 
     // Watch for branch changes
     this.gitHeadWatcher = vscode.workspace.createFileSystemWatcher('**/.git/HEAD')
-    this.gitHeadWatcher.onDidChange(() => {
+    this.gitHeadWatcher.onDidCreate(() => {
       this.checkBranchChange(workspacePath)
     })
 
     // Also watch for git operations that might not update HEAD directly
     this.gitRefsWatcher = vscode.workspace.createFileSystemWatcher('**/.git/refs/heads/*')
-    this.gitRefsWatcher.onDidChange(() => {
+    this.gitRefsWatcher.onDidCreate(() => {
       setTimeout(() => this.checkBranchChange(workspacePath), 100)
     })
   }
