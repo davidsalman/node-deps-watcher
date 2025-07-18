@@ -8,6 +8,8 @@ let packageManagerDetector: PackageManagerDetector
 let gitMonitor: GitMonitor
 let statusBarItem: vscode.StatusBarItem
 let outputChannel: vscode.OutputChannel
+let packageJsonWatcher: vscode.FileSystemWatcher
+let lockFileWatcher: vscode.FileSystemWatcher
 
 export function activate(context: vscode.ExtensionContext) {
   // Initialize output channel
@@ -53,27 +55,28 @@ export function activate(context: vscode.ExtensionContext) {
 
 function setupWorkspaceMonitoring(context: vscode.ExtensionContext) {
   // Monitor git branch changes
-  gitMonitor.onBranchChange(branchName => {
+  gitMonitor.onBranchChange(async branchName => {
+    console.log(`Branch changed to: ${branchName}`)
     const config = vscode.workspace.getConfiguration('nodeDepsWatcher')
     if (config.get('autoCheckOnBranchSwitch', true)) {
       outputChannel.appendLine(`Branch changed to: ${branchName}`)
-      checkDependencies()
+      await checkDependencies()
     }
   })
 
   // Monitor package.json changes
-  const packageJsonWatcher = vscode.workspace.createFileSystemWatcher('**/package.json')
-  packageJsonWatcher.onDidChange(() => {
+  packageJsonWatcher = vscode.workspace.createFileSystemWatcher('**/package.json')
+  packageJsonWatcher.onDidChange(async () => {
     outputChannel.appendLine('package.json changed, checking dependencies...')
-    checkDependencies()
+    await checkDependencies()
   })
   context.subscriptions.push(packageJsonWatcher)
 
   // Monitor lock file changes
-  const lockFileWatcher = vscode.workspace.createFileSystemWatcher('**/{package-lock.json,yarn.lock,pnpm-lock.yaml}')
-  lockFileWatcher.onDidChange(() => {
+  lockFileWatcher = vscode.workspace.createFileSystemWatcher('**/{package-lock.json,yarn.lock,pnpm-lock.yaml}')
+  lockFileWatcher.onDidChange(async () => {
     outputChannel.appendLine('Lock file changed, checking dependencies...')
-    checkDependencies()
+    await checkDependencies()
   })
   context.subscriptions.push(lockFileWatcher)
 }
@@ -196,10 +199,19 @@ async function toggleDeleteNodeModulesOnCleanInstall() {
 }
 
 export function deactivate() {
+  if (gitMonitor) {
+    gitMonitor.dispose()
+  }
   if (statusBarItem) {
     statusBarItem.dispose()
   }
   if (outputChannel) {
     outputChannel.dispose()
+  }
+  if (packageJsonWatcher) {
+    packageJsonWatcher.dispose()
+  }
+  if (lockFileWatcher) {
+    lockFileWatcher.dispose()
   }
 }
