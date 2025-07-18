@@ -72,8 +72,42 @@ export class PackageManagerDetector {
       listCommand: 'npm list --depth=0 --silent --json',
     },
   ]
+  private fileChangeEmitter = new vscode.EventEmitter<string>()
+  private packageJsonWatcher: vscode.FileSystemWatcher | undefined
+  private lockFileWatcher: vscode.FileSystemWatcher | undefined
 
-  constructor(private outputChannel: vscode.OutputChannel) {}
+  constructor(private outputChannel: vscode.OutputChannel) {
+    this.setupFileWatchers()
+  }
+
+  get onFileChange(): vscode.Event<string> {
+    return this.fileChangeEmitter.event
+  }
+
+  private setupFileWatchers() {
+    if (!vscode.workspace.workspaceFolders) {
+      return
+    }
+
+    const workspacePath = vscode.workspace.workspaceFolders[0].uri.fsPath
+    const packageJsonPath = path.join(workspacePath, 'package.json')
+    if (!fs.existsSync(packageJsonPath)) {
+      this.outputChannel.appendLine('No package.json found, skipping file watchers setup')
+      return
+    }
+
+    // Watch for package.json changes
+    this.packageJsonWatcher = vscode.workspace.createFileSystemWatcher('**/package.json')
+    this.packageJsonWatcher.onDidChange(() => {
+      this.fileChangeEmitter.fire('package.json')
+    })
+
+    // Watch for lock file changes
+    this.lockFileWatcher = vscode.workspace.createFileSystemWatcher('**/{package-lock.json,yarn.lock,pnpm-lock.yaml}')
+    this.lockFileWatcher.onDidChange((e: vscode.Uri) => {
+      this.fileChangeEmitter.fire(`${e.fsPath}`)
+    })
+  }
 
   async detectPackageManager(workspacePath: string): Promise<string> {
     const config = vscode.workspace.getConfiguration('nodeDepsWatcher')
@@ -119,33 +153,26 @@ export class PackageManagerDetector {
 
   async getInstalledPackages(workspacePath: string, packageManager: string): Promise<Record<string, string>> {
     const pmInfo = this.getPackageManagerInfo(packageManager)
-    let commandOutput: string = ''
 
     // Get installed packages using the package manager's list command
+    let commandOutput: string = ''
     try {
       this.outputChannel.appendLine(`Running command: ${pmInfo.listCommand}`)
       const { stdout } = await execAsync(pmInfo.listCommand, { cwd: workspacePath })
       commandOutput = stdout
     } catch (error) {
       this.outputChannel.appendLine(`Failed to get installed packages: ${error}`.trim())
-    }
-
-    // Fallback to parsing output if command fails, this will happen when packages are missing
-    try {
       this.outputChannel.appendLine(`Running command: output=$(${pmInfo.listCommand} 2>&1) || echo "$output"`)
       const { stdout } = await execAsync(`output=$(${pmInfo.listCommand} 2>&1) || echo "$output"`, {
         cwd: workspacePath,
       })
       commandOutput = stdout
-    } catch (error) {
-      this.outputChannel.appendLine(`Failed to get installed packages with fallback: ${error}`.trim())
     }
 
     // Parse the command output to extract package names and versions
+    const packages: Record<string, string> = {}
     try {
       const result = JSON.parse(commandOutput)
-      const packages: Record<string, string> = {}
-
       switch (packageManager) {
         case 'yarn':
           if (result.data && result.data.trees) {
@@ -173,11 +200,11 @@ export class PackageManagerDetector {
           }
           break
       }
-      return packages
     } catch (error) {
       this.outputChannel.appendLine(`Failed to parse installed packages: ${error}`)
+    } finally {
+      return packages
     }
-    return {}
   }
 
   async executeCommand(command: string, workspacePath: string): Promise<void> {
@@ -204,5 +231,15 @@ export class PackageManagerDetector {
         }
       })
     })
+  }
+
+  dispose() {
+    if (this.packageJsonWatcher) {
+      this.packageJsonWatcher.dispose()
+    }
+    if (this.lockFileWatcher) {
+      this.lockFileWatcher.dispose()
+    }
+    this.fileChangeEmitter.dispose()
   }
 }

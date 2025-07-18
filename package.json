@@ -29,8 +29,13 @@
         "category": "Node Deps Watcher"
       },
       {
-        "command": "nodeDepsWatcher.toggleAutoCheck",
+        "command": "nodeDepsWatcher.toggleAutoCheckOnBranchSwitch",
         "title": "Toggle Auto-Check on Branch Switch",
+        "category": "Node Deps Watcher"
+      },
+      {
+        "command": "nodeDepsWatcher.toggleAutoCheckOnFileChange",
+        "title": "Toggle Auto-Check on File Change",
         "category": "Node Deps Watcher"
       },
       {
@@ -46,6 +51,11 @@
           "type": "boolean",
           "default": true,
           "description": "Automatically check dependencies when switching git branches"
+        },
+        "nodeDepsWatcher.autoCheckOnFileChange": {
+          "type": "boolean",
+          "default": true,
+          "description": "Automatically check dependencies on package.json or lock file changes"
         },
         "nodeDepsWatcher.showStatusBarItem": {
           "type": "boolean",

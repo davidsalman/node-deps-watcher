@@ -8,8 +8,6 @@ let packageManagerDetector: PackageManagerDetector
 let gitMonitor: GitMonitor
 let statusBarItem: vscode.StatusBarItem
 let outputChannel: vscode.OutputChannel
-let packageJsonWatcher: vscode.FileSystemWatcher
-let lockFileWatcher: vscode.FileSystemWatcher
 
 export function activate(context: vscode.ExtensionContext) {
   // Initialize output channel
@@ -33,7 +31,8 @@ export function activate(context: vscode.ExtensionContext) {
     vscode.commands.registerCommand('nodeDepsWatcher.checkDependencies', checkDependencies),
     vscode.commands.registerCommand('nodeDepsWatcher.cleanInstall', cleanInstall),
     vscode.commands.registerCommand('nodeDepsWatcher.detectPackageManager', detectPackageManager),
-    vscode.commands.registerCommand('nodeDepsWatcher.toggleAutoCheck', toggleAutoCheck),
+    vscode.commands.registerCommand('nodeDepsWatcher.toggleAutoCheckOnBranchSwitch', toggleAutoCheckOnBranchSwitch),
+    vscode.commands.registerCommand('nodeDepsWatcher.toggleAutoCheckOnFileChange', toggleAutoCheckOnFileChange),
     vscode.commands.registerCommand(
       'nodeDepsWatcher.toggleDeleteNodeModulesOnCleanInstall',
       toggleDeleteNodeModulesOnCleanInstall,
@@ -56,7 +55,6 @@ export function activate(context: vscode.ExtensionContext) {
 function setupWorkspaceMonitoring(context: vscode.ExtensionContext) {
   // Monitor git branch changes
   gitMonitor.onBranchChange(async branchName => {
-    console.log(`Branch changed to: ${branchName}`)
     const config = vscode.workspace.getConfiguration('nodeDepsWatcher')
     if (config.get('autoCheckOnBranchSwitch', true)) {
       outputChannel.appendLine(`Branch changed to: ${branchName}`)
@@ -64,21 +62,14 @@ function setupWorkspaceMonitoring(context: vscode.ExtensionContext) {
     }
   })
 
-  // Monitor package.json changes
-  packageJsonWatcher = vscode.workspace.createFileSystemWatcher('**/package.json')
-  packageJsonWatcher.onDidChange(async () => {
-    outputChannel.appendLine('package.json changed, checking dependencies...')
-    await checkDependencies()
+  // Monitor package.json and lockfile changes
+  packageManagerDetector.onFileChange(async fileChange => {
+    const config = vscode.workspace.getConfiguration('nodeDepsWatcher')
+    if (config.get('autoCheckOnFileChange', true)) {
+      outputChannel.appendLine(`File changed: ${fileChange}`)
+      await checkDependencies()
+    }
   })
-  context.subscriptions.push(packageJsonWatcher)
-
-  // Monitor lock file changes
-  lockFileWatcher = vscode.workspace.createFileSystemWatcher('**/{package-lock.json,yarn.lock,pnpm-lock.yaml}')
-  lockFileWatcher.onDidChange(async () => {
-    outputChannel.appendLine('Lock file changed, checking dependencies...')
-    await checkDependencies()
-  })
-  context.subscriptions.push(lockFileWatcher)
 }
 
 function updateStatusBar(text: string) {
@@ -179,7 +170,7 @@ async function detectPackageManager() {
   }
 }
 
-async function toggleAutoCheck() {
+async function toggleAutoCheckOnBranchSwitch() {
   const config = vscode.workspace.getConfiguration('nodeDepsWatcher')
   const current = config.get('autoCheckOnBranchSwitch', true)
 
@@ -187,6 +178,15 @@ async function toggleAutoCheck() {
 
   const status = !current ? 'enabled' : 'disabled'
   vscode.window.showInformationMessage(`Auto-check on branch switch ${status}`)
+}
+
+async function toggleAutoCheckOnFileChange() {
+  const config = vscode.workspace.getConfiguration('nodeDepsWatcher')
+  const current = config.get('autoCheckOnFileChange', true)
+
+  await config.update('autoCheckOnFileChange', !current, vscode.ConfigurationTarget.Workspace)
+  const status = !current ? 'enabled' : 'disabled'
+  vscode.window.showInformationMessage(`Auto-check on file change ${status}`)
 }
 
 async function toggleDeleteNodeModulesOnCleanInstall() {
@@ -202,16 +202,13 @@ export function deactivate() {
   if (gitMonitor) {
     gitMonitor.dispose()
   }
+  if (packageManagerDetector) {
+    packageManagerDetector.dispose()
+  }
   if (statusBarItem) {
     statusBarItem.dispose()
   }
   if (outputChannel) {
     outputChannel.dispose()
-  }
-  if (packageJsonWatcher) {
-    packageJsonWatcher.dispose()
-  }
-  if (lockFileWatcher) {
-    lockFileWatcher.dispose()
   }
 }

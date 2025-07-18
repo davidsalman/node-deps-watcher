@@ -55,7 +55,7 @@ export class GitMonitor {
     const gitPath = path.join(workspacePath, '.git')
 
     if (!fs.existsSync(gitPath)) {
-      this.outputChannel.appendLine('No git repository found')
+      this.outputChannel.appendLine('No git repository found, skipping branch monitoring')
       return
     }
 

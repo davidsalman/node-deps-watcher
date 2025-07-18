@@ -90,10 +90,12 @@ export class DependencyChecker {
         ...packageJson.dependencies,
         ...packageJson.devDependencies,
       }
+      console.log('Required dependencies:', requiredDependencies)
 
       // Detect package manager and get installed packages
       const packageManager = await this.packageManagerDetector.detectPackageManager(workspacePath)
       const installedPackages = await this.packageManagerDetector.getInstalledPackages(workspacePath, packageManager)
+      console.log('Installed packages:', installedPackages)
 
       // Check for missing packages
       for (const [name, version] of Object.entries(requiredDependencies)) {
@@ -121,6 +123,7 @@ export class DependencyChecker {
       this.outputChannel.appendLine(`Missing: ${result.missingPackages.length}`)
       this.outputChannel.appendLine(`Extra: ${result.extraPackages.length}`)
       this.outputChannel.appendLine(`Outdated: ${result.outdatedPackages.length}`)
+      console.log('Dependency check result:', result)
     } catch (error) {
       result.errors.push(`Failed to check dependencies: ${error}`)
       result.isValid = false
