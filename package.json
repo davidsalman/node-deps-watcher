@@ -2,8 +2,8 @@
   "name": "node-deps-watcher",
   "displayName": "Node Dependencies Watcher",
   "description": "VS Code extension that watches and manages Node.js package dependencies when switching git branches",
-  "version": "0.0.0",
-  "main": "./out/extensions.js",
+  "version": "0.0.1",
+  "main": "./out/extension.js",
   "author": "David Salman",
   "activationEvents": [
     "onStartupFinished"
@@ -72,7 +72,7 @@
     }
   },
   "engines": {
-    "vscode": "^1.102.0"   
+    "vscode": "^1.64.0"
   },
   "keywords": [
     "vscode",
@@ -95,6 +95,7 @@
   "homepage": "https://github.com/davidsalman/node-deps-watcher#readme",
   "scripts": {
     "build": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
     "eslint": "eslint src",
     "eslint:fix": "eslint src --fix",
     "prettier": "prettier src --check",
