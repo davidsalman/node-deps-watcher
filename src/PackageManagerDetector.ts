@@ -55,21 +55,21 @@ export class PackageManagerDetector {
       lockFile: 'pnpm-lock.yaml',
       installCommand: 'pnpm install',
       cleanInstallCommand: 'pnpm install --frozen-lockfile',
-      listCommand: 'pnpm list --depth=0 --json',
+      listCommand: 'pnpm list --depth=0 --silent --json',
     },
     {
       name: 'yarn',
       lockFile: 'yarn.lock',
       installCommand: 'yarn install',
       cleanInstallCommand: 'yarn install --frozen-lockfile',
-      listCommand: 'yarn list --depth=0 --json',
+      listCommand: 'yarn list --depth=0 --silent --json',
     },
     {
       name: 'npm',
       lockFile: 'package-lock.json',
       installCommand: 'npm install',
       cleanInstallCommand: 'npm ci',
-      listCommand: 'npm list --depth=0 --json',
+      listCommand: 'npm list --depth=0 --silent --json',
     },
   ]
 
@@ -119,45 +119,64 @@ export class PackageManagerDetector {
 
   async getInstalledPackages(workspacePath: string, packageManager: string): Promise<Record<string, string>> {
     const pmInfo = this.getPackageManagerInfo(packageManager)
+    let commandOutput: string = ''
 
+    // Get installed packages using the package manager's list command
     try {
+      this.outputChannel.appendLine(`Running command: ${pmInfo.listCommand}`)
       const { stdout } = await execAsync(pmInfo.listCommand, { cwd: workspacePath })
-
-      if (packageManager === 'npm') {
-        const result = JSON.parse(stdout)
-        return result.dependencies || {}
-      } else if (packageManager === 'yarn') {
-        const result = JSON.parse(stdout)
-        const packages: Record<string, string> = {}
-        if (result.data && result.data.trees) {
-          result.data.trees.forEach((tree: { name: string }) => {
-            if (tree.name && tree.name.includes('@')) {
-              // Extract package name and version accounting for scope packages
-              // e.g., @scope/package@1.0.0
-              const match = tree.name.match(/^(.*)@([^@]+)$/)
-              if (match) {
-                const [, name, version] = match
-                packages[name] = version
-              }
-            }
-          })
-        }
-        return packages
-      } else if (packageManager === 'pnpm') {
-        const result = JSON.parse(stdout)
-        const packages: Record<string, string> = {}
-        if (result.dependencies) {
-          Object.keys(result.dependencies).forEach(name => {
-            packages[name] = result.dependencies[name].version
-          })
-        }
-        return packages
-      }
+      commandOutput = stdout
     } catch (error) {
-      this.outputChannel.appendLine(`Failed to get installed packages: ${error}`)
-      throw error
+      this.outputChannel.appendLine(`Failed to get installed packages: ${error}`.trim())
     }
 
+    // Fallback to parsing output if command fails, this will happen when packages are missing
+    try {
+      this.outputChannel.appendLine(`Running command: output=$(${pmInfo.listCommand} 2>&1) || echo "$output"`)
+      const { stdout } = await execAsync(`output=$(${pmInfo.listCommand} 2>&1) || echo "$output"`, {
+        cwd: workspacePath,
+      })
+      commandOutput = stdout
+    } catch (error) {
+      this.outputChannel.appendLine(`Failed to get installed packages with fallback: ${error}`.trim())
+    }
+
+    // Parse the command output to extract package names and versions
+    try {
+      const result = JSON.parse(commandOutput)
+      const packages: Record<string, string> = {}
+
+      switch (packageManager) {
+        case 'yarn':
+          if (result.data && result.data.trees) {
+            result.data.trees.forEach((tree: { name: string }) => {
+              if (tree.name && tree.name.includes('@')) {
+                // Extract package name and version accounting for scope packages
+                // e.g., @scope/package@1.0.0
+                const match = tree.name.match(/^(.*)@([^@]+)$/)
+                if (match) {
+                  const [, name, version] = match
+                  packages[name] = version
+                }
+              }
+            })
+          }
+          break
+        case 'pnpm':
+        case 'npm':
+          if (result.dependencies) {
+            Object.keys(result.dependencies).forEach(name => {
+              if (result.dependencies[name].version) {
+                packages[name] = result.dependencies[name].version
+              }
+            })
+          }
+          break
+      }
+      return packages
+    } catch (error) {
+      this.outputChannel.appendLine(`Failed to parse installed packages: ${error}`)
+    }
     return {}
   }
 
