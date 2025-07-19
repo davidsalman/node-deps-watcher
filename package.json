@@ -54,7 +54,7 @@
         },
         "nodeDepsWatcher.autoCheckOnFileChange": {
           "type": "boolean",
-          "default": true,
+          "default": false,
           "description": "Automatically check dependencies on package.json or lock file changes"
         },
         "nodeDepsWatcher.showStatusBarItem": {

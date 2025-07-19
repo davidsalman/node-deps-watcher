@@ -65,7 +65,7 @@ function setupWorkspaceMonitoring(context: vscode.ExtensionContext) {
   // Monitor package.json and lockfile changes
   packageManagerDetector.onFileChange(async fileChange => {
     const config = vscode.workspace.getConfiguration('nodeDepsWatcher')
-    if (config.get('autoCheckOnFileChange', true)) {
+    if (config.get('autoCheckOnFileChange', false)) {
       outputChannel.appendLine(`File changed: ${fileChange}`)
       await checkDependencies()
     }
